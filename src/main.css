@@ -1,0 +1,16 @@
+table.game {
+    border-spacing: 0;
+}
+
+table.game td {
+    width: 30px;
+    height: 30px;
+}
+
+table.game td.field {
+    background-color: black;
+}
+
+table.game td.wall {
+    background-color: red;
+}
