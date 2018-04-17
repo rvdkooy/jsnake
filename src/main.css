@@ -3,6 +3,7 @@ table.game {
 }
 
 table.game td {
+    position: relative;
     width: 30px;
     height: 30px;
 }
@@ -13,4 +14,18 @@ table.game td.field {
 
 table.game td.wall {
     background-color: red;
+}
+
+table.game td.fruit {
+    background-color: orange;
+}
+
+.score {
+    z-index: 1;
+    position: absolute;
+    left: 8px;
+    top: 4px;
+    font-size: x-large;
+    font-weight: bold;
+    text-align: center;
 }
