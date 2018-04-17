@@ -4,6 +4,7 @@ let gameLoopInterval;
 const S_DOWN = 'sd', S_UP = 'su', S_LEFT = 'sl', S_RIGHT = 'sr'
 
 const buildMap = (element) => {
+    const wallCoords = [];
     const table = document.createElement('table');
     table.className = 'game';
 
@@ -12,9 +13,10 @@ const buildMap = (element) => {
         for (let x = 0; x < dimensionsX; x++) {
             let className = 'field';
             if (y === 0 || y === (dimensionsY - 1) || x === 0 || x === (dimensionsX - 1)) {
+                wallCoords.push({ x: x, y: y });
                 className = 'wall';
             }
-            
+
             const column = document.createElement('td');
             column.id = x + '-' + y;
             column.className = className;
@@ -28,66 +30,126 @@ const buildMap = (element) => {
     return {
         get: (x, y) => {
             return document.getElementById(x + '-' + y);
-        }
+        },
+        wallCoords: wallCoords
     }
 }
 
-const createSnake = (x, y, map) => {
-    const Snake = function(_x, _y, map) {
-        this.tail = [ { x: _x, y: _y } ];
+const Snake = function (_x, _y, map) {
+    this._initialX = _x;
+    this._initialY = _y;
+    this.tail = [];
+    this.direction = S_DOWN;
+    this._keyMap = { 'arrowup': S_UP, 'arrowright': S_RIGHT, 'arrowdown': S_DOWN, 'arrowleft': S_LEFT };
+
+    this.startFromBeginning = () => {
+        this.tail.forEach(t => {
+            map.get(t.x, t.y).className = 'field';
+        });
+        this.tail = [
+            { x: this._initialX, y: this._initialY },
+            { x: this._initialX, y: this._initialY + 1 },
+            { x: this._initialX, y: this._initialY + 2 },
+            { x: this._initialX, y: this._initialY + 3 },
+            { x: this._initialX, y: this._initialY + 4 },
+            { x: this._initialX, y: this._initialY + 5 },
+            { x: this._initialX, y: this._initialY + 6 },
+        ];
         this.direction = S_DOWN;
-        this._keyMap = { 'arrowup': S_UP, 'arrowright': S_RIGHT, 'arrowdown': S_DOWN, 'arrowleft': S_LEFT };
+        this._updateTail();
+    }
 
-        this.updateDirection = function(key) {
-            this.direction = this._keyMap[key.toLowerCase()];
-        }
-
-        this.update = (map) => {
-            const updateTail = (lastPos, newPos) => {
-                this.tail.push(newPos);
-                map.get(newPos.x, newPos.y).className = 'snake';
-                map.get(lastPos.x, lastPos.y).className = 'field';
+    this.updateDirection = function (key) {
+        const direction = this._keyMap[key.toLowerCase()];
+        if (direction) { 
+            if (this.direction === S_DOWN && direction !== S_UP) {
+                this.direction = direction;
             }
-
-            const last = this.tail.splice(-1, 1)[0];
-
-            if (this.direction === S_DOWN) {
-                updateTail(last, { x: last.x, y: last.y + 1 });
+            if (this.direction === S_UP && direction !== S_DOWN) {
+                this.direction = direction;
             }
-            if (this.direction === S_LEFT) {
-                updateTail(last, { x: last.x - 1, y: last.y });
+            if (this.direction === S_LEFT && direction !== S_RIGHT) {
+                this.direction = direction;
             }
-            if (this.direction === S_UP) {
-                updateTail(last, { x: last.x, y: last.y - 1 });
-            }
-            if (this.direction === S_RIGHT) {
-                updateTail(last, { x: last.x + 1, y: last.y });
+            if (this.direction === S_RIGHT && direction !== S_LEFT) {
+                this.direction = direction;
             }
         }
-        map.get(3, 3).className = 'snake';
     }
     
-    const snake = new Snake(x, y, map);
-    snake.update(map);
-    return snake;
-};
+    this.update = (map, gameOver) => {
+        const detectWallCollision = (newPos) => {
+            let collision = false;
+            map.wallCoords.forEach(coord => {
+                if (coord.x === newPos.x && coord.y === newPos.y) {
+                    collision = true;
+                }
+            });
+            return collision;
+        };
+        
+        const detectSelfCollision = (newPos) => {
+            let collision = false;
+            this.tail.forEach(coord => {
+                if (coord.x === newPos.x && coord.y === newPos.y) {
+                    collision = true;
+                }
+            });
+            return collision;
+        }
 
+        const tip = this.tail[this.tail.length - 1];
+        let newPost = null;
+        if (this.direction === S_DOWN) { newPos = { x: tip.x, y: tip.y + 1 }; }
+        if (this.direction === S_LEFT) { newPos = { x: tip.x - 1, y: tip.y }; }
+        if (this.direction === S_UP) { newPos = { x: tip.x, y: tip.y - 1 }; }
+        if (this.direction === S_RIGHT) { newPos = { x: tip.x + 1, y: tip.y }; }
+
+        if (!detectWallCollision(newPos) && !detectSelfCollision(newPos)) {
+            const last = this.tail.shift();
+            map.get(last.x, last.y).className = 'field';
+            this.tail.push(newPos);
+            this._updateTail();
+        } else {
+            gameOver();
+        }
+    }
+
+    this._updateTail = () => {
+        this.tail.forEach(t => {
+            map.get(t.x, t.y).className = 'snake';
+        });
+    }
+}
 
 const gameLoop = (map, snake) => {
-    snake.update(map);
+    snake.update(map, gameOver);
 };
 
-const start = (element) => {
+const init = (element) => {
     const map = buildMap(element);
-    const snake = createSnake(3, 3, map);
+    const snake = new Snake(3, 3, map);
 
     document.addEventListener('keydown', (event) => {
+        if (event.keyCode === 32 && !gameLoopInterval) {
+            start(map, snake);
+        }
         snake.updateDirection(event.key);
     });
 
+    start(map, snake);
+}
+
+const start = (map, snake) => {
+    snake.startFromBeginning();
     gameLoopInterval = setInterval(() => {
         gameLoop(map, snake);
     }, 150);
 }
 
-start(document.getElementById('game'));
+const gameOver = () => {
+    clearInterval(gameLoopInterval);
+    gameLoopInterval = null;
+};
+
+init(document.getElementById('game'));
