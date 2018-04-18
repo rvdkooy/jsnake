@@ -1,10 +1,11 @@
-(function () {
-    window.jSnake = function (element, options) {
+(function() {
+    window.jSnake = function(element, options) {
         options = options || {};
         const dimensionsX = options.width || 20;
         const dimensionsY = options.height || 20;
         let gameLoopInterval;
         const S_DOWN = 'sd', S_UP = 'su', S_LEFT = 'sl', S_RIGHT = 'sr'
+        const keyCodes = { arrowUp: 38, arrowDown: 40, arrowLeft: 37, arrowRight: 39, space: 32 }
         let score = 0;
 
         function beep() {
@@ -55,7 +56,6 @@
             this._initialY = _y;
             this.tail = [];
             this.direction = S_DOWN;
-            this._keyMap = { 'arrowup': S_UP, 'arrowright': S_RIGHT, 'arrowdown': S_DOWN, 'arrowleft': S_LEFT };
 
             this.startFromBeginning = () => {
                 this.tail.forEach(t => {
@@ -69,21 +69,20 @@
                 this._updateTail();
             }
 
-            this.updateDirection = function (key) {
-                const direction = this._keyMap[key.toLowerCase()];
-                if (direction) {
-                    if (this.direction === S_DOWN && direction !== S_UP) {
-                        this.direction = direction;
-                    }
-                    if (this.direction === S_UP && direction !== S_DOWN) {
-                        this.direction = direction;
-                    }
-                    if (this.direction === S_LEFT && direction !== S_RIGHT) {
-                        this.direction = direction;
-                    }
-                    if (this.direction === S_RIGHT && direction !== S_LEFT) {
-                        this.direction = direction;
-                    }
+            this.updateDirection = function (keyCode) {
+                let direction = null;
+                
+                if (keyCode === keyCodes.arrowDown && this.direction !== S_UP) {
+                    this.direction = S_DOWN;
+                }
+                if (keyCode === keyCodes.arrowUp && this.direction !== S_DOWN) {
+                    this.direction = S_UP;
+                }
+                if (keyCode === keyCodes.arrowLeft && this.direction !== S_RIGHT) {
+                    this.direction = S_LEFT;
+                }
+                if (keyCode === keyCodes.arrowRight && this.direction !== S_LEFT) {
+                    this.direction = S_RIGHT;
                 }
             }
 
@@ -129,7 +128,6 @@
                 } else {
                     gameOver();
                 }
-                return newPos;
             }
 
             this._updateTail = () => {
@@ -191,11 +189,11 @@
             const snake = new Snake(3, 3, map);
             const fruit = new Fruit(map);
             document.addEventListener('keydown', (event) => {
-                if (event.keyCode === 32 && !gameLoopInterval) {
+                if (event.keyCode === keyCodes.space && !gameLoopInterval) {
                     start(map, snake, fruit);
                 }
-                snake.updateDirection(event.key);
-            });
+                snake.updateDirection(event.keyCode);
+            }, false);
 
             start(map, snake, fruit);
         }
