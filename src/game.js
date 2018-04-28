@@ -56,6 +56,7 @@
             this._initialY = _y;
             this.tail = [];
             this.direction = S_DOWN;
+            this._processing = false;
 
             this.startFromBeginning = () => {
                 this.tail.forEach(t => {
@@ -70,6 +71,8 @@
             }
 
             this.updateDirection = function (keyCode) {
+                if (this._processing) return;
+
                 let direction = null;
                 
                 if (keyCode === keyCodes.arrowDown && this.direction !== S_UP) {
@@ -84,6 +87,7 @@
                 if (keyCode === keyCodes.arrowRight && this.direction !== S_LEFT) {
                     this.direction = S_RIGHT;
                 }
+                this._processing = true;
             }
 
             this.update = (map, fruit, gameOver) => {
@@ -132,6 +136,7 @@
 
             this._updateTail = () => {
                 this.tail.forEach(t => map.get(t.x, t.y).className = 'snake');
+                this._processing = false;
             }
         }
 
@@ -199,16 +204,17 @@
         }
 
         const start = (map, snake, fruit) => {
+            score = 0;
             snake.startFromBeginning();
             fruit.startFromBeginning(snake.tail);
 
             gameLoopInterval = setInterval(() => {
                 gameLoop(map, snake, fruit);
-            }, 100);
+            }, 150);
         }
 
         const gameOver = () => {
-            score = 0;
+            
             clearInterval(gameLoopInterval);
             gameLoopInterval = null;
             beep();
